@@ -11,32 +11,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Lowercase registry and image names
+        run: |
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+          echo "ACTOR_NAME=${GITHUB_ACTOR,,}" >> ${GITHUB_ENV}
+
       - name: Build image and push to GitHub Packages (Docker Registry)
         uses: mr-smithers-excellent/docker-build-push@v6
         with:
-          image: ${{ github.event.repository.name }}
+          image: ${{ env.IMAGE_NAME }}
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
   auto-deploy-docker-job:
     needs: release-docker-image-job
     runs-on: ubuntu-latest
-    env:
-      CONTAINER_NAME: 'phitharawat-vue-app'
-      DOCKER_IMAGE_URL: 'ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:${{  github.ref_name }}'
     steps:
-    - name: executing remote ssh commands using password
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: '159.223.41.181'  #production url: 159.223.41.181:9003
-        username: 'root'
-        password: '$Admin_1jj395qu'
-        port: '22'
-        script: |
-          docker logout ghcr.io
-          docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}  ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}
-          docker rm -f ${{ env.CONTAINER_NAME }} || true
-          docker pull ${{ env.DOCKER_IMAGE_URL }}
-          docker run --restart=always -d --name ${{ env.CONTAINER_NAME }} -p 9003:80 ${{ env.DOCKER_IMAGE_URL }}
+      - name: Lowercase registry and image names for deployment
+        run: |
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+          echo "ACTOR_NAME=${GITHUB_ACTOR,,}" >> ${GITHUB_ENV}
+
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: '159.223.41.181' #production url: 159.223.41.181:9003
+          username: 'root'
+          password: '$Admin_1jj395qu'
+          port: '22'
+          script: |
+            docker logout ghcr.io
+            docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io
+            docker rm -f phitharawat-vue-app || true
+            docker pull ghcr.io/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            docker run --restart=always -d --name phitharawat-vue-app -p 9003:80 ghcr.io/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
