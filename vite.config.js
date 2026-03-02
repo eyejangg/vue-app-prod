@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/vue-app-prod/',
+  base: process.env.NODE_ENV === 'production' && process.env.GITHUB_ACTIONS ? '/vue-app-prod/' : '/',
   plugins: [vue()],
   resolve: {
     alias: {
