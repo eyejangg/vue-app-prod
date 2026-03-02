@@ -3,7 +3,7 @@ name: 'build and deploy production'
 on:
   push:
     tags:
-      - 'xxxx'
+      - 'v*' # Trigger เมื่อ push tag ที่ขึ้นต้นด้วย v (เช่น v1.0.0)
 
 jobs:
   release-docker-image-job:
